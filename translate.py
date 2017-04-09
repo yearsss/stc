@@ -48,6 +48,7 @@ def get_batch(data, encoder_size, decoder_size, batch_size, reverse_input=False,
            Variable(torch.LongTensor(batch_decoder_inputs)), Variable(batch_weight)
 
 def evaluate(model, dev, encode_max_len, decode_max_len, batch_size, batch_first=False):
+    print(len(dev))
     total_loss = 0
     for _ in xrange(int(len(dev) / batch_size)):
         encoder_inputs, decoder_inputs, _ = get_batch(dev, encode_max_len, decode_max_len,
@@ -196,19 +197,20 @@ if __name__ == "__main__":
 
             step += 1
 
-    while True:
+    cnt = 0
+    while cnt < 100:
         enc, dec, _ = get_batch(test, encode_max_len, decode_max_len, batch_size, batch_first=batch_first)
+
         print("Input: ")
         for time in xrange(encode_max_len):
             if batch_first:
                 print(enc_dict[enc[0][time].data[0]], end=" ")
             else:
                 print(enc_dict[enc[time][0].data[0]], end=" ")
-
         pred = model(enc, dec, feed_previous=True)
 
         print("Output: ")
         for time in xrange(decode_max_len - 1):
             y_pred = pred[time][0]
             print(dec_dict[y_pred.max(0)[1].data[0]], end=" ")
-        input()
+        cnt += 1

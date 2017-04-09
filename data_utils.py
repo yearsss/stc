@@ -166,25 +166,21 @@ def prepare_data(data_dir, src_vocabulary_size, dst_vocabulary_size,
     if not os.path.exists(dst_train_ids_path):
         data_to_tok_ids(os.path.join(data_dir,"mnist-stc2-repos-id-cmnt"), dst_train_ids_path, dst_vocab_path, model)
 
-
+    """
     # Create token ids for the development data.
     src_dev_ids_path = os.path.join(data_dir,"dev.ids.q")
     dst_dev_ids_path = os.path.join(data_dir,"dev.ids.lf")
     if not os.path.exists(src_dev_ids_path) or not os.path.exists(dst_dev_ids_path):
         data_to_tok_ids_dev(os.path.join(data_dir,"mnist-STC2_Train_V1.0.xls"), src_dev_ids_path, dst_dev_ids_path, src_vocab_path)
     """
+
     # Create token ids for the testing data.
-    src_test_ids_path = test_path + (".ids.q")
-    dst_test_ids_path = test_path + (".ids.lf")
-    data_to_tok_ids(test_path + ".q", src_test_ids_path, src_vocab_path)
-    data_to_tok_ids(test_path + ".lf", dst_test_ids_path, dst_vocab_path, model)
-       
-    return read_data(src_train_ids_path, dst_train_ids_path, model=model), read_data(src_dev_ids_path, dst_dev_ids_path,
-                                                                                     model=model), read_data(
-        src_test_ids_path, dst_test_ids_path, model=model)
-        
-    """
-    return read_data(src_train_ids_path, dst_train_ids_path, model=model), \
-            read_data(src_dev_ids_path, dst_dev_ids_path, model=model), \
-           read_data(src_dev_ids_path, dst_dev_ids_path, model=model)
+    src_test_ids_path = os.path.join(data_dir,"test.ids.q")
+    if not os.path.exists(src_test_ids_path):
+        data_to_tok_ids(os.path.join(data_dir,"test-id-post-cn"), src_test_ids_path, src_vocab_path)
+
+    data = read_data(src_train_ids_path, dst_train_ids_path, model=model)
+    stc1_test = read_data(src_test_ids_path, src_test_ids_path, model=model)
+
+    return data[:-40], data[-40:], stc1_test
 
