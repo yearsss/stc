@@ -155,23 +155,23 @@ def prepare_data(data_dir, src_vocabulary_size, dst_vocabulary_size,
     src_vocab_path = os.path.join(data_dir, "vocab.q")
     dst_vocab_path = os.path.join(data_dir, "vocab.lf")
     if not os.path.exists(src_vocab_path):
-        create_vocabulary(src_vocab_path, os.path.join(data_dir,"stc2-repos-id-post"), src_vocabulary_size)
+        create_vocabulary(src_vocab_path, os.path.join(data_dir, "stc2-repos-id-post"), src_vocabulary_size)
     if not os.path.exists(dst_vocab_path):
-        create_vocabulary(dst_vocab_path, os.path.join(data_dir,"stc2-repos-id-cmnt"), dst_vocabulary_size)
+        create_vocabulary(dst_vocab_path, os.path.join(data_dir, "stc2-repos-id-cmnt"), dst_vocabulary_size)
 
     # Create token ids for the training data.
-    src_train_ids_path = os.path.join(data_dir,"train.ids.q")
-    dst_train_ids_path = os.path.join(data_dir,"train.ids.lf")
+    src_train_ids_path = os.path.join(data_dir, "train.ids.q")
+    dst_train_ids_path = os.path.join(data_dir, "train.ids.lf")
     if not os.path.exists(src_train_ids_path):
-        data_to_tok_ids(os.path.join(data_dir,"stc2-repos-id-post"), src_train_ids_path, src_vocab_path)
+        data_to_tok_ids(os.path.join(data_dir, "stc2-repos-id-post"), src_train_ids_path, src_vocab_path)
     if not os.path.exists(dst_train_ids_path):
-        data_to_tok_ids(os.path.join(data_dir,"stc2-repos-id-cmnt"), dst_train_ids_path, dst_vocab_path, model)
+        data_to_tok_ids(os.path.join(data_dir, "stc2-repos-id-cmnt"), dst_train_ids_path, dst_vocab_path, model)
 
     # Create token ids for the test data.
     src_test_ids_path = os.path.join(data_dir, "test.ids.q")
     dst_test_ids_path = os.path.join(data_dir, "test.ids.lf")
     if not os.path.exists(src_test_ids_path) or not os.path.exists(dst_test_ids_path):
-        data_to_tok_ids_test(os.path.join(data_dir, "STC2_Train_V1.0.xlsx"), src_test_ids_path, dst_test_ids_path,
+        data_to_tok_ids_test(os.path.join(data_dir, "STC2_Train_V1.0.xls"), src_test_ids_path, dst_test_ids_path,
                              src_vocab_path)
 
     '''

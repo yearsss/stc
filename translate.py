@@ -13,7 +13,7 @@ from six.moves import xrange
 import data_utils
 from seq2seq import Seq2Seq, Seq2Tree
 
-criterion = nn.NLLLoss()
+
 
 def get_batch(data, encoder_size, decoder_size, batch_size, reverse_input=False, batch_first=False):
     encoder_inputs = []
@@ -82,7 +82,7 @@ if __name__ == "__main__":
     model = "seq2seq"
     batch_first = False
     attention = True
-    dropout_p = 0
+    dropout_p = 0.5
     batch_size = 20
     encode_ntoken = 100000
     decode_ntoken = 100000
@@ -99,6 +99,10 @@ if __name__ == "__main__":
     data_path = "data/"
 
     checkpoint_after = 0
+
+    class_weighted = torch.ones(decode_ntoken)
+    class_weighted[0] = 0
+    criterion = nn.NLLLoss(class_weighted)
 
     train, dev, test = data_utils.prepare_data(data_path, encode_ntoken, decode_ntoken, recreate=False, model=model)
     enc_dict = dict()
@@ -133,7 +137,7 @@ if __name__ == "__main__":
         last_train_loss = 10
         loss_count = 0
         best_dev_loss = 10
-        step = 0
+        step = 1
         begin_time = time.time()
         while True:
             batch_enc_inputs, batch_dec_inputs, batch_weights = \
@@ -142,16 +146,7 @@ if __name__ == "__main__":
                 batch_enc_inputs, batch_dec_inputs = batch_enc_inputs.cuda(), batch_dec_inputs.cuda()
             pred = model(batch_enc_inputs, batch_dec_inputs, feed_previous=False)
             total_loss = None
-            # if batch_first:
-                # for batch in xrange(batch_size):
-                    # y_pred = pred[batch]
-                    # target = batch_dec_inputs[batch][1:]
-                    # loss = criterion(y_pred, target)
-                    # if total_loss is None:
-                        # total_loss = loss
-                    # else:
-                        # total_loss += loss
-            # else:
+
             for time_step in xrange(len(batch_dec_inputs) - 1):
                 y_pred = pred[time_step]
                 if batch_first:
@@ -164,6 +159,7 @@ if __name__ == "__main__":
                     total_loss = loss
                 else:
                     total_loss += loss
+
             optimizer.zero_grad()
             total_loss /= batch_size
             total_loss.backward()
@@ -247,3 +243,6 @@ if __name__ == "__main__":
                         else:
                             f.write(dec_dict[y_pred.max(0)[1].data[0]])
                     f.write("\n----------------------------------\n")
+                index += batch_size
+                print("index: {0}".format(index))
+
