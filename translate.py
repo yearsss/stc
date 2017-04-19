@@ -84,8 +84,8 @@ if __name__ == "__main__":
     attention = True
     dropout_p = 0
     batch_size = 20
-    encode_ntoken = 500
-    decode_ntoken = 500
+    encode_ntoken = 100000
+    decode_ntoken = 100000
     encode_max_len = 30
     decode_max_len = 20
     embedding_size = 300
