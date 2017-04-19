@@ -70,11 +70,10 @@ class Seq2Seq(nn.Module):
     def encode(self, encoder_inputs):
         weight = next(self.parameters()).data
         init_state = (Variable(weight.new(self.nlayers, self.batch_size, self.hidden_size).zero_()),
-                      Variable(weight.new(self.nlayers, self.batch_size, self.hidden_size).zero_()))
+                Variable(weight.new(self.nlayers, self.batch_size, self.hidden_size).zero_()))
         embedding = self.enc_embedding(encoder_inputs)
         if self.dropout_p > 0:
             embedding = self.dropout(embedding)
-        # print("embedding size:{0},init_state size:{1}".format(embedding.size(), init_state[0].size()))
         encoder_outputs, encoder_state = self.encoder(embedding, init_state)
         return encoder_outputs, encoder_state
 
@@ -99,7 +98,6 @@ class Seq2Seq(nn.Module):
                 if self.batch_first:
                     embedding = torch.transpose(embedding, 0, 1)
                 pred.append(softmax)
-                # print("softmax1: {0}".format(softmax))
         else:
             embedding = self.dec_embedding(decoder_inputs)
             if self.dropout_p > 0:
@@ -119,7 +117,6 @@ class Seq2Seq(nn.Module):
                 else:
                     output = outputs[time_step]
                 softmax = self.predict(output, encoder_outputs)
-
                 pred.append(softmax)
         return pred
 

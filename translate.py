@@ -87,7 +87,7 @@ if __name__ == "__main__":
     encode_ntoken = 500
     decode_ntoken = 500
     encode_max_len = 30
-    decode_max_len = 40
+    decode_max_len = 20
     embedding_size = 300
     hidden_size = 300
     init_range = 0.08
@@ -98,7 +98,7 @@ if __name__ == "__main__":
     momentum=0.9
     data_path = "data/"
 
-    checkpoint_after = 50
+    checkpoint_after = 0
 
     train, dev, test = data_utils.prepare_data(data_path, encode_ntoken, decode_ntoken, recreate=False, model=model)
     enc_dict = dict()
@@ -191,26 +191,59 @@ if __name__ == "__main__":
                     epoch_time, epoch, learning_rate, train_loss, dev_loss
                     ))
                 train_loss = 0
-                if epoch > checkpoint_after and dev_loss < best_dev_loss:
-                    state_to_save = model.state_dict()
-                    torch.save(state_to_save, model_path)
+                #if epoch > checkpoint_after and dev_loss < best_dev_loss:
+                state_to_save = model.state_dict()
+                torch.save(state_to_save, model_path)
 
             step += 1
 
     cnt = 0
     while cnt < 100:
-        enc, dec, _ = get_batch(test, encode_max_len, decode_max_len, batch_size, batch_first=batch_first)
+        #enc, dec, _ = get_batch(test, encode_max_len, decode_max_len, batch_size, batch_first=batch_first)
 
-        print("Input: ")
-        for time in xrange(encode_max_len):
-            if batch_first:
-                print(enc_dict[enc[0][time].data[0]], end=" ")
-            else:
-                print(enc_dict[enc[time][0].data[0]], end=" ")
-        pred = model(enc, dec, feed_previous=True)
+        with open("result", "wb") as f:
+            index = 0
+            while index < len(test):
+                encoder_inputs = []
+                decoder_inputs = []
+                for i in xrange(batch_size):
+                    enc, dec = test[index+i]
+                    # print("enc: {0}".format(enc))
+                    enc += [data_utils.PAD_ID] * (encode_max_len - len(enc))
+                    dec = [data_utils.GO_ID] + dec + [data_utils.PAD_ID] * \
+                                                     (decode_max_len - len(dec) - 1)
+                    encoder_inputs.append(enc)
+                    decoder_inputs.append(dec)
 
-        print("Output: ")
-        for time in xrange(decode_max_len - 1):
-            y_pred = pred[time][0]
-            print(dec_dict[y_pred.max(0)[1].data[0]], end=" ")
-        cnt += 1
+                if batch_first:
+                    batch_encoder_inputs = encoder_inputs
+                    batch_decoder_inputs = decoder_inputs
+                else:
+                    batch_encoder_inputs = []
+                    for time in xrange(encode_max_len):
+                        seq = [encoder_inputs[batch_idx][time] for batch_idx in xrange(batch_size)]
+                        batch_encoder_inputs.append(seq)
+
+                    batch_decoder_inputs = []
+                    for time in xrange(decode_max_len):
+                        seq = [decoder_inputs[batch_idx][time] for batch_idx in xrange(batch_size)]
+                        batch_decoder_inputs.append(seq)
+
+                batch_enc_inputs = Variable(torch.LongTensor(batch_encoder_inputs))
+                batch_dec_inputs = Variable(torch.LongTensor(batch_decoder_inputs))
+                # print("batch_enc_inputs: {0}".format(batch_enc_inputs.size()))
+                # print("batch_dec_inputs: {0}".format(batch_dec_inputs.size()))
+                pre = model(batch_enc_inputs, batch_dec_inputs, feed_previous=True)
+
+                for b in range(batch_size):
+                    f.write("input: \n")
+                    for time in xrange(encode_max_len):
+                        f.write(enc_dict[batch_enc_inputs[time][b].data[0]])
+                    f.write("\noutput: \n")
+                    for time in xrange(decode_max_len - 1):
+                        y_pred = pre[time][b]
+                        if dec_dict[y_pred.max(0)[1].data[0]] == '_EOS':
+                            break
+                        else:
+                            f.write(dec_dict[y_pred.max(0)[1].data[0]])
+                    f.write("\n----------------------------------\n")
