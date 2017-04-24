@@ -14,11 +14,10 @@ def repackage_state(h):
 
 class Seq2Seq(nn.Module):
     def __init__(self, encode_ntoken, decode_ntoken,
-            input_size, hidden_size,
-            input_max_len, output_max_len,
-            batch_size,
-            nlayers=1, bias=False, attention=True, dropout_p=0.5,
-            batch_first=False):
+                 input_size, hidden_size,
+                 input_max_len, output_max_len,
+                 batch_size, nlayers=4, bias=False, attention=True, dropout_p=0.5,
+                 batch_first=False):
         super(Seq2Seq, self).__init__()
 
         self.dropout_p = dropout_p
@@ -141,6 +140,7 @@ class Seq2Seq(nn.Module):
         # decoding
         pred = self.decode(encoder_outputs, encoder_state, decoder_inputs, feed_previous)
         return pred
+
 
 class Seq2Tree(Seq2Seq):
     def decode(self, encoder_outputs, encoder_state, decoder_inputs, feed_previous):

@@ -148,8 +148,7 @@ def data_to_tok_ids_test(data_path, source_path, target_path, vocabulary_path, m
                     dst_tokens_file.write(" ".join([str(tok) for tok in dst_tokdst_ids]) + "\n")
 
 
-def prepare_data(data_dir, src_vocabulary_size, dst_vocabulary_size,
-                 recreate=False, model="seq2seq"):
+def prepare_data(data_dir, src_vocabulary_size, dst_vocabulary_size, model="seq2seq"):
 
     # Create vocabularies of the appropriate sizes.
     src_vocab_path = os.path.join(data_dir, "vocab.q")
@@ -171,7 +170,7 @@ def prepare_data(data_dir, src_vocabulary_size, dst_vocabulary_size,
     src_test_ids_path = os.path.join(data_dir, "test.ids.q")
     dst_test_ids_path = os.path.join(data_dir, "test.ids.lf")
     if not os.path.exists(src_test_ids_path) or not os.path.exists(dst_test_ids_path):
-        data_to_tok_ids_test(os.path.join(data_dir, "STC2_Train_V1.0.xls"), src_test_ids_path, dst_test_ids_path,
+        data_to_tok_ids_test(os.path.join(data_dir, "STC2_Train_V1.0.xlsx"), src_test_ids_path, dst_test_ids_path,
                              src_vocab_path)
 
     '''

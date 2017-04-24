@@ -14,7 +14,6 @@ import data_utils
 from seq2seq import Seq2Seq, Seq2Tree
 
 
-
 def get_batch(data, encoder_size, decoder_size, batch_size, reverse_input=False, batch_first=False):
     encoder_inputs = []
     decoder_inputs = []
@@ -44,8 +43,9 @@ def get_batch(data, encoder_size, decoder_size, batch_size, reverse_input=False,
 
     batch_weight = torch.ones(batch_size)
 
-    return Variable(torch.LongTensor(batch_encoder_inputs)),\
+    return Variable(torch.LongTensor(batch_encoder_inputs)), \
            Variable(torch.LongTensor(batch_decoder_inputs)), Variable(batch_weight)
+
 
 def evaluate(model, dev, encode_max_len, decode_max_len, batch_size, batch_first=False):
     print(len(dev))
@@ -59,15 +59,15 @@ def evaluate(model, dev, encode_max_len, decode_max_len, batch_size, batch_first
         for time in xrange(len(decoder_inputs) - 1):
             y_pred = pred[time]
             if batch_first:
-                target = decoder_inputs[:, time+1]
+                target = decoder_inputs[:, time + 1]
             else:
                 target = decoder_inputs[time + 1]
-            # print("Prediction")
-            # for batch in range(batch_size):
+                # print("Prediction")
+                # for batch in range(batch_size):
                 # print(dec_dict[y_pred[batch].max(0)[1].data[0]], end=" ")
-            # print()
-            # print("Target")
-            # for batch in range(batch_size):
+                # print()
+                # print("Target")
+                # for batch in range(batch_size):
                 # print(dec_dict[target[batch].data[0]], end=" ")
             # print()
             loss = criterion(y_pred, target)
@@ -79,13 +79,13 @@ if __name__ == "__main__":
     ###train####
     print("start!")
 
-    model = "seq2seq"
     batch_first = False
     attention = True
     dropout_p = 0.5
-    batch_size = 20
+    n_layers = 4
+    batch_size = 40
     encode_ntoken = 100000
-    decode_ntoken = 100000
+    decode_ntoken = 60000
     encode_max_len = 30
     decode_max_len = 20
     embedding_size = 300
@@ -95,16 +95,17 @@ if __name__ == "__main__":
     learning_rate = 0.01
     learning_rate_decay = 0.98
     decay_rate = 0.95
-    momentum=0.9
+    momentum = 0.9
     data_path = "data/"
-
     checkpoint_after = 0
-
     class_weighted = torch.ones(decode_ntoken)
     class_weighted[0] = 0
-    criterion = nn.NLLLoss(class_weighted)
 
-    train, dev, test = data_utils.prepare_data(data_path, encode_ntoken, decode_ntoken, recreate=False, model=model)
+    train, dev, test = data_utils.prepare_data(data_path, encode_ntoken, decode_ntoken)
+
+    """
+        load vocab into enc_dit and dec_dict.
+    """
     enc_dict = dict()
     for idx, line in enumerate(open(os.path.join(data_path, "vocab.q")).readlines()):
         enc_dict[idx] = line.strip()
@@ -112,16 +113,10 @@ if __name__ == "__main__":
     for idx, line in enumerate(open(os.path.join(data_path, "vocab.lf")).readlines()):
         dec_dict[idx] = line.strip()
 
-    if model == "seq2seq":
-        model = Seq2Seq(encode_ntoken, decode_ntoken,
-                embedding_size, hidden_size,
-                encode_max_len, decode_max_len,
-                batch_size, attention=attention, dropout_p=dropout_p, batch_first=batch_first)
-    else:
-        model = Seq2Tree(encode_ntoken, decode_ntoken,
-                embedding_size, hidden_size,
-                encode_max_len, decode_max_len,
-                batch_size, attention=attention, dropout_p=dropout_p, batch_first=batch_first)
+    model = Seq2Seq(encode_ntoken, decode_ntoken, embedding_size,
+                    hidden_size, encode_max_len, decode_max_len,
+                    batch_size, nlayers=n_layers, attention=attention,
+                    dropout_p=dropout_p, batch_first=batch_first)
 
     model_path = "model.dat"
     if os.path.exists(model_path):
@@ -130,8 +125,9 @@ if __name__ == "__main__":
     else:
         if torch.cuda.is_available():
             model.cuda()
+        criterion = nn.NLLLoss(class_weighted)
         model.init_weights(init_range)
-        optimizer = optim.RMSprop(model.parameters(), lr = learning_rate, alpha=decay_rate)
+        optimizer = optim.RMSprop(model.parameters(), lr=learning_rate, alpha=decay_rate)
 
         train_loss = 0
         last_train_loss = 10
@@ -144,21 +140,19 @@ if __name__ == "__main__":
                 get_batch(train, encode_max_len, decode_max_len, batch_size, batch_first=batch_first)
             if torch.cuda.is_available():
                 batch_enc_inputs, batch_dec_inputs = batch_enc_inputs.cuda(), batch_dec_inputs.cuda()
-            pred = model(batch_enc_inputs, batch_dec_inputs, feed_previous=False)
-            total_loss = None
 
+            pred = model(batch_enc_inputs, batch_dec_inputs, feed_previous=False)
+
+            total_loss = 0.
             for time_step in xrange(len(batch_dec_inputs) - 1):
                 y_pred = pred[time_step]
                 if batch_first:
                     target = batch_dec_inputs[:, time_step + 1]
                 else:
-                    target = batch_dec_inputs[time_step+1]
-                # print(y_pred.size(), target.size())
+                    target = batch_dec_inputs[time_step + 1]
+
                 loss = criterion(y_pred, target)
-                if total_loss is None:
-                    total_loss = loss
-                else:
-                    total_loss += loss
+                total_loss += loss
 
             optimizer.zero_grad()
             total_loss /= batch_size
@@ -185,9 +179,9 @@ if __name__ == "__main__":
                     epoch_time = 0
                 print("Epoch time: {0}\tEpoch: {1}\tLR: {2}, Train loss: {3}\tDev loss: {4}".format(
                     epoch_time, epoch, learning_rate, train_loss, dev_loss
-                    ))
+                ))
                 train_loss = 0
-                #if epoch > checkpoint_after and dev_loss < best_dev_loss:
+                # if epoch > checkpoint_after and dev_loss < best_dev_loss:
                 state_to_save = model.state_dict()
                 torch.save(state_to_save, model_path)
 
@@ -195,7 +189,7 @@ if __name__ == "__main__":
 
     cnt = 0
     while cnt < 100:
-        #enc, dec, _ = get_batch(test, encode_max_len, decode_max_len, batch_size, batch_first=batch_first)
+        # enc, dec, _ = get_batch(test, encode_max_len, decode_max_len, batch_size, batch_first=batch_first)
 
         with open("result", "wb") as f:
             index = 0
@@ -203,7 +197,7 @@ if __name__ == "__main__":
                 encoder_inputs = []
                 decoder_inputs = []
                 for i in xrange(batch_size):
-                    enc, dec = test[index+i]
+                    enc, dec = test[index + i]
                     # print("enc: {0}".format(enc))
                     enc += [data_utils.PAD_ID] * (encode_max_len - len(enc))
                     dec = [data_utils.GO_ID] + dec + [data_utils.PAD_ID] * \
@@ -245,4 +239,3 @@ if __name__ == "__main__":
                     f.write("\n----------------------------------\n")
                 index += batch_size
                 print("index: {0}".format(index))
-
